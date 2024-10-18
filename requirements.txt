@@ -1,3 +1,4 @@
+pip==24.2
 streamlit==1.39.0  # Latest stable version
 transformers==4.33.0
 torch==2.5.0  # Latest compatible version
