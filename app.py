@@ -5,6 +5,13 @@ from transformers import pipeline
 import random
 import os
 
+import subprocess
+import sys
+
+# Upgrade pip to version 24.2
+subprocess.check_call([sys.executable, '-m', 'pip', 'install', '--upgrade', 'pip==24.2'])
+
+
 # Function to extract text from a Word document
 def extract_text_from_docx(file):
     doc = Document(file)
