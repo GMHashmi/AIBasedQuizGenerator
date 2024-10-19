@@ -1,5 +1,5 @@
 streamlit==1.39.0
-transformers==4.29.2
+transformers
 tokenizers==0.10.3  # Version with pre-built wheels
 sentencepiece==0.1.91  # Version with pre-built wheels
 torch==2.3.0
