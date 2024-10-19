@@ -34,7 +34,7 @@ def preprocess_text(text):
 # Function to generate questions using a Hugging Face model
 @st.cache_resource
 def load_qg_model():
-    return pipeline('text2text-generation', model='valhalla/t5-base-qa-qg-hl')
+    return pipeline("text2text-generation", model="valhalla/t5-base-qa-qg-hl")
 
 def generate_questions(text, num_questions=5):
     # Load the question-generation pipeline
