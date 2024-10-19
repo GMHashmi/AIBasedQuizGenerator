@@ -1,8 +1,7 @@
-
-streamlit==1.39.0  # Latest stable version
-transformers==4.33.0
-torch==2.5.0  # Latest compatible version
+streamlit==1.39.0
+transformers==4.29.2
+tokenizers==0.13.2  # Version with pre-built wheels
+sentencepiece==0.1.96  # Version with pre-built wheels
+torch==2.5.0+cpu  # Update to latest compatible version
 python-docx==0.8.11
 python-pptx==0.6.21
-tokenizers==0.13.2  # A version that is known to have prebuilt wheels
-sentencepiece==0.1.96  # Version with prebuilt binaries
