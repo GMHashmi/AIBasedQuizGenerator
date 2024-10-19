@@ -34,14 +34,27 @@ def preprocess_text(text):
 # Function to generate questions using a Hugging Face model
 @st.cache_resource
 def load_qg_model():
-    return pipeline("text2text-generation", model="valhalla/t5-base-qa-qg-hl")
+    return pipeline('text2text-generation', model='valhalla/t5-base-qa-qg-hl')
 
 def generate_questions(text, num_questions=5):
     # Load the question-generation pipeline
     qg_model = load_qg_model()
-    # Generate questions
-    generated = qg_model(f"generate questions: {text}", max_length=512, num_return_sequences=num_questions)
-    return [q['generated_text'] for q in generated]
+
+    # Splitting the text into parts if it's too long for better processing
+    text_chunks = [text[i:i+512] for i in range(0, len(text), 512)]
+
+    # Generate questions for each chunk of text, using beam search to get multiple results
+    generated_questions = []
+    for chunk in text_chunks:
+        generated = qg_model(
+            f"generate questions: {chunk}",
+            max_length=128,
+            num_beams=4,  # Use beam search for generating multiple questions
+            num_return_sequences=num_questions  # Return multiple questions
+        )
+        generated_questions.extend([q['generated_text'] for q in generated])
+    
+    return generated_questions[:num_questions]  # Return only the requested number of questions
 
 # Function to create intelligent distractor options using a model
 @st.cache_resource
