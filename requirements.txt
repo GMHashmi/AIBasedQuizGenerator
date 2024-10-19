@@ -5,3 +5,6 @@ sentencepiece
 torch
 python-docx
 python-pptx
+regex
+Pillow
+
