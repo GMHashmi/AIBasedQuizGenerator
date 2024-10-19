@@ -4,9 +4,7 @@ from pptx import Presentation
 from transformers import pipeline
 import random
 import os
-
-
-
+import re
 
 # Function to extract text from a Word document
 def extract_text_from_docx(file):
@@ -26,24 +24,50 @@ def extract_text_from_pptx(file):
                 full_text.append(shape.text)
     return '\n'.join(full_text)
 
+# Clean and preprocess the extracted text
+def preprocess_text(text):
+    # Removing unnecessary white spaces, newlines, and filtering out irrelevant information
+    text = re.sub(r'\n+', '\n', text.strip())  # Remove extra newlines
+    text = re.sub(r'\s+', ' ', text)  # Replace multiple spaces with one
+    return text
+
 # Function to generate questions using a Hugging Face model
+@st.cache_resource
+def load_qg_model():
+    return pipeline('text2text-generation', model='deepset/t5-base-qa-qg-hl')
+
 def generate_questions(text, num_questions=5):
     # Load the question-generation pipeline
-    qg_model = pipeline('text2text-generation', model='valhalla/t5-small-qa-qg-hl')
+    qg_model = load_qg_model()
     # Generate questions
-    generated = qg_model(text)
-    return [q['generated_text'] for q in generated[:num_questions]]
+    generated = qg_model(f"generate questions: {text}", max_length=512, num_return_sequences=num_questions)
+    return [q['generated_text'] for q in generated]
+
+# Function to create intelligent distractor options using a model
+@st.cache_resource
+def load_distractor_model():
+    return pipeline('fill-mask', model='bert-base-uncased')
+
+def generate_distractors(answer, num_options=4):
+    distractor_model = load_distractor_model()
+    masked_sentence = answer.replace(answer.split()[-1], '[MASK]')
+    distractors = distractor_model(masked_sentence, top_k=num_options)
+    options = [d['token_str'] for d in distractors if d['token_str'] != answer][:num_options-1]
+    options.append(answer)  # Ensure correct answer is in the options
+    random.shuffle(options)  # Shuffle to randomize the correct answer position
+    return options
 
 # Function to create multiple choice quiz with options
 def create_quiz(questions, num_options=4):
     quiz = []
     for question in questions:
-        options = [f"Option {i+1}" for i in range(num_options)]  # Placeholder options
-        correct_option = random.choice(options)
+        # Extract the answer from the question (assuming it's present at the end or within the generated text)
+        answer = question.split('?')[-1].strip()  # Placeholder logic for answer extraction
+        options = generate_distractors(answer, num_options)
         quiz.append({
-            "question": question,
+            "question": question.split('?')[0] + '?',
             "options": options,
-            "answer": correct_option
+            "answer": answer
         })
     return quiz
 
@@ -53,7 +77,7 @@ def create_answer_key(quiz):
 
 # Main app function
 def main():
-    st.title("Quiz Generator")
+    st.title("AI-Based Quiz Generator")
 
     # File uploader for the document
     uploaded_file = st.file_uploader("Upload your document", type=["docx", "pptx"])
@@ -65,6 +89,9 @@ def main():
             text = extract_text_from_docx(uploaded_file)
         elif uploaded_file.name.endswith(".pptx"):
             text = extract_text_from_pptx(uploaded_file)
+
+        # Preprocess the extracted text
+        text = preprocess_text(text)
 
         # Display the extracted text
         st.write("Extracted Text:")
