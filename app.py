@@ -40,6 +40,9 @@ def generate_questions(text, num_questions=5):
     # Load the question-generation pipeline
     qg_model = load_qg_model()
 
+    # Make sure `num_beams` is at least equal to `num_questions`
+    num_beams = max(4, num_questions)  # Ensure beams are greater or equal to requested questions
+
     # Splitting the text into parts if it's too long for better processing
     text_chunks = [text[i:i+512] for i in range(0, len(text), 512)]
 
@@ -49,8 +52,8 @@ def generate_questions(text, num_questions=5):
         generated = qg_model(
             f"generate questions: {chunk}",
             max_length=128,
-            num_beams=4,  # Use beam search for generating multiple questions
-            num_return_sequences=num_questions  # Return multiple questions
+            num_beams=num_beams,  # Ensure enough beams for multiple questions
+            num_return_sequences=min(num_questions, num_beams)  # Return the requested number of questions
         )
         generated_questions.extend([q['generated_text'] for q in generated])
     
