@@ -1,9 +1,8 @@
 import streamlit as st
 from docx import Document
 from pptx import Presentation
-from transformers import pipeline
+from transformers import pipeline, AutoModelForMaskedLM, AutoTokenizer
 import random
-import os
 import re
 
 # Function to extract text from a Word document
@@ -62,13 +61,30 @@ def generate_questions(text, num_questions=5):
 # Function to create intelligent distractor options using a model
 @st.cache_resource
 def load_distractor_model():
-    return pipeline('fill-mask', model='bert-base-uncased')
+    tokenizer = AutoTokenizer.from_pretrained('bert-base-uncased')
+    model = AutoModelForMaskedLM.from_pretrained('bert-base-uncased')
+    return pipeline('fill-mask', model=model, tokenizer=tokenizer)
 
 def generate_distractors(answer, num_options=4):
+    if not answer:
+        return ['Option 1', 'Option 2', 'Option 3', 'Option 4']  # Fallback in case of empty answer
+    
     distractor_model = load_distractor_model()
-    masked_sentence = answer.replace(answer.split()[-1], '[MASK]')
-    distractors = distractor_model(masked_sentence, top_k=num_options)
-    options = [d['token_str'] for d in distractors if d['token_str'] != answer][:num_options-1]
+    
+    # Try to mask the last word of the answer (basic logic)
+    try:
+        last_word = answer.split()[-1]
+        masked_sentence = answer.replace(last_word, '[MASK]')
+        distractors = distractor_model(masked_sentence, top_k=num_options)
+        options = [d['token_str'] for d in distractors if d['token_str'] != last_word][:num_options-1]
+    except IndexError:
+        # If the answer doesn't have words or is not suitable for splitting
+        options = []
+
+    # If no distractors are generated, fallback to default options
+    if not options:
+        options = [f"Option {i+1}" for i in range(num_options-1)]
+    
     options.append(answer)  # Ensure correct answer is in the options
     random.shuffle(options)  # Shuffle to randomize the correct answer position
     return options
